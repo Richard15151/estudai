@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ExercicioEditavel from './ExercicioEditavel';
 
-// Interfaces para tipagem dos dados (certifique-se de que correspondem ao seu backend)
+// --- INTERFACES: Ficam fora do componente, mas dentro do arquivo ---
 export interface Alternativa {
   letra: string; // Ex: "a", "b", "c", "d"
   texto: string; // Ex: "Alternativa de texto"
@@ -26,7 +26,7 @@ export interface Gabarito {
 export interface DadosLista {
   titulo: string;
   materia?: string; // Tornando opcional
-  tema?: string;     // Tornando opcional
+  tema?: string;    // Tornando opcional
   quantidade: number | string;
   exercicios: Exercicio[];
   gabarito: Gabarito;
@@ -42,15 +42,18 @@ interface RespostaProps {
   onGerarOutra: () => void;
 }
 
+// --- COMPONENTE FUNCIONAL ---
 export default function Resposta({ resposta, isLoading, onGerarOutra }: RespostaProps) {
+  // --- HOOKS DE ESTADO: DEVEM FICAR DENTRO DO COMPONENTE ---
   const [listaExercicios, setListaExercicios] = useState<Exercicio[]>([]);
   const [gabaritoLocal, setGabaritoLocal] = useState<Gabarito>({});
   const [tituloLocal, setTituloLocal] = useState<string>('');
   const [materiaLocal, setMateriaLocal] = useState<string>('');
   const [temaLocal, setTemaLocal] = useState<string>('');
   const [quantidadeLocal, setQuantidadeLocal] = useState<number | string>(0);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); // ESTE ESTADO DEVE FICAR AQUI DENTRO!
 
-
+  // --- PRIMEIRO useEffect: Para processar a resposta da API principal (gerar lista) ---
   useEffect(() => {
     if (typeof resposta === 'object' && resposta !== null && !isLoading) {
       if (resposta.titulo && resposta.titulo.toUpperCase() !== "ALERTA") {
@@ -97,28 +100,41 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
     }
   }, [resposta, isLoading]);
 
-  // Função para atualizar um exercício na lista
+  // --- SEGUNDO useEffect: Dedicado a capturar o accessToken da URL ---
+  // Este useEffect roda apenas uma vez na montagem do componente para verificar a URL.
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('accessToken');
+    if (token) {
+      setGoogleAccessToken(token);
+      // Limpar o token da URL
+      urlParams.delete('accessToken');
+      window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`);
+    }
+  }, []); // Array de dependências vazio para rodar apenas uma vez na montagem
+
+  // --- FUNÇÃO PARA ATUALIZAR UM EXERCÍCIO NA LISTA ---
   const handleUpdateExercicio = (id: string, novoExercicio: Exercicio) => {
     setListaExercicios(prevExercicios =>
       prevExercicios.map(ex => (ex.id === id ? novoExercicio : ex))
     );
     // Também atualiza o gabarito se a resposta correta mudou
     setGabaritoLocal(prevGabarito => {
-        const novoGabarito = { ...prevGabarito };
-        // Encontra o número da questão correspondente ao ID
-        const numeroQuestaoIndex = listaExercicios.findIndex(ex => ex.id === id);
+      const novoGabarito = { ...prevGabarito };
+      // Encontra o número da questão correspondente ao ID
+      const numeroQuestaoIndex = listaExercicios.findIndex(ex => ex.id === id);
 
-        if (numeroQuestaoIndex !== -1 && novoExercicio.respostaCorreta !== undefined) {
-            // O número da questão é o índice + 1
-            const numeroQuestao = (numeroQuestaoIndex + 1).toString();
-            // Garante que a resposta correta seja uma string antes de atribuir
-            novoGabarito[numeroQuestao] = novoExercicio.respostaCorreta;
-        }
-        return novoGabarito;
+      if (numeroQuestaoIndex !== -1 && novoExercicio.respostaCorreta !== undefined) {
+        // O número da questão é o índice + 1
+        const numeroQuestao = (numeroQuestaoIndex + 1).toString();
+        // Garante que a resposta correta seja uma string antes de atribuir
+        novoGabarito[numeroQuestao] = novoExercicio.respostaCorreta;
+      }
+      return novoGabarito;
     });
   };
 
-  // Função para remover um exercício da lista
+  // --- FUNÇÃO PARA REMOVER UM EXERCÍCIO DA LISTA ---
   const handleRemoverExercicio = (id: string) => {
     setListaExercicios(prevExercicios => {
       const novosExercicios = prevExercicios.filter(ex => ex.id !== id);
@@ -137,7 +153,70 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
     });
   };
 
-  // Renderização de estado de carregamento
+  // --- FUNÇÃO PARA GERAR MAIS UM EXERCÍCIO (SE JÁ TIVER IMPLEMENTADO) ---
+  // Se você já adicionou esta função, ela ficaria aqui.
+  // Exemplo (comentado se ainda não tiver a API de backend):
+  /*
+  const handleGerarMaisUmExercicio = async () => {
+    // ... lógica para chamar a API de gerar um único exercício ...
+  };
+  */
+
+  // --- FUNÇÃO PARA GERAR O GOOGLE FORMS ---
+  const handleGerarGoogleForm = async () => {
+    // 1. Verificar se já temos um token de acesso. Se não, iniciar o fluxo OAuth.
+    if (!googleAccessToken) {
+      try {
+        const authResponse = await fetch('/api/gerar-google-form'); // Chama a API Route GET
+        const data = await authResponse.json();
+        if (data.authUrl) {
+          // Redireciona o usuário para a URL de autenticação do Google
+          window.location.href = data.authUrl;
+          return; // Para a execução aqui
+        } else {
+          throw new Error("Não foi possível obter a URL de autenticação.");
+        }
+      } catch (error) {
+        console.error("Erro ao iniciar autenticação Google:", error);
+        alert("Erro ao iniciar autenticação com o Google. Verifique o console.");
+        return;
+      }
+    }
+
+    // 2. Se já temos um token (ou após o redirecionamento e captura do token),
+    // fazer a requisição POST para criar o formulário.
+    try {
+      const response = await fetch('/api/gerar-google-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exercicios: listaExercicios,
+          titulo: tituloLocal,
+          materia: materiaLocal,
+          tema: temaLocal,
+          accessToken: googleAccessToken, // Envia o token de acesso
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro HTTP! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      alert(`Formulário Google Forms criado com sucesso! URL de Edição: ${result.formUrl}\nURL para Alunos: ${result.viewUrl}`);
+      window.open(result.viewUrl, '_blank'); // Abre o formulário em uma nova aba
+
+    } catch (error: any) {
+      console.error("Erro ao gerar formulário do Google Forms:", error.message);
+      alert(`Erro ao gerar formulário: ${error.message}. Verifique as permissões ou se o token é válido.`);
+    }
+  };
+
+
+  // --- RENDERIZAÇÃO DE ESTADO DE CARREGAMENTO ---
   if (isLoading) {
     return (
       <div className="response bg-white p-6 rounded-xl shadow-md border border-gray-200 mt-6 text-center max-w-xl mx-auto">
@@ -147,7 +226,7 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
     );
   }
 
-  // Se a resposta for nula ou uma string (erro/validação)
+  // --- SE A RESPOSTA FOR NULA OU UMA STRING (ERRO/VALIDAÇÃO) ---
   if (!resposta || typeof resposta === 'string') {
     return (
       <div className="response bg-white p-6 rounded-xl shadow-md border border-gray-200 mt-6 text-left max-w-xl mx-auto text-red-600 font-semibold">
@@ -156,7 +235,7 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
     );
   }
 
-  // Se for um alerta
+  // --- SE FOR UM ALERTA ---
   if (resposta.titulo && resposta.titulo.toUpperCase() === "ALERTA" && resposta.mensagemAlerta) {
     return (
       <div className="response bg-white p-6 rounded-xl shadow-md border border-gray-200 mt-6 text-left max-w-xl mx-auto">
@@ -174,7 +253,7 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
     );
   }
 
-  // Renderização da lista de exercícios principal
+  // --- RENDERIZAÇÃO DA LISTA DE EXERCÍCIOS PRINCIPAL ---
   return (
     <div className="response bg-white p-6 rounded-xl shadow-md border border-gray-200 mt-6 text-left w-full">
       <h2 className="text-2xl font-bold mb-4 text-gray-800">{tituloLocal}</h2>
@@ -231,12 +310,30 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
         </>
       )}
 
-      <div className="mt-6 text-center">
+      <div className="mt-6 text-center flex justify-center space-x-4"> {/* Adicionei flex e space-x-4 */}
         <button
           onClick={onGerarOutra}
           className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-md shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
         >
           Gerar Outra Lista
+        </button>
+
+        {/* Botão para Gerar Mais Um Exercício (Adicione se já tiver a função handleGerarMaisUmExercicio) */}
+        {/*
+        <button
+          onClick={handleGerarMaisUmExercicio}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-md shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+        >
+          Gerar Mais Um Exercício
+        </button>
+        */}
+
+        {/* Botão Gerar Google Forms */}
+        <button
+          onClick={handleGerarGoogleForm}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-md shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2"
+        >
+          Gerar Google Forms
         </button>
       </div>
     </div>

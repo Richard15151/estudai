@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
+    "google-auth-library": "^10.0.0-rc.3",
+    "googleapis": "^150.0.1",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
