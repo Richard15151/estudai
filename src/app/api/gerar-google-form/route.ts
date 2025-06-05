@@ -11,9 +11,9 @@ import { Exercicio, Alternativa } from '../../components/Resposta';
  */
 export async function GET(request: Request) {
   // Inicialize o OAuth2Client AQUI DENTRO da função GET
-  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-  const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+  const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const CLIENT_SECRET = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
+  const REDIRECT_URI = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
 
   // Adicione verificações de existência (opcional, mas boa prática)
   if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
@@ -61,9 +61,9 @@ export async function POST(request: Request) {
     }
 
     // Inicialize o OAuth2Client AQUI DENTRO da função POST também
-    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-    const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+    const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const CLIENT_SECRET = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
+    const REDIRECT_URI = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
 
     if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
       console.error('Missing Google API credentials for POST /api/gerar-google-form.');
