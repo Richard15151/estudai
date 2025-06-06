@@ -2,11 +2,13 @@ export default function Footer(){
     return(
         <footer className="relative w-full mb-20">
             <div className="flex flex-col items-center justify-center w-full py-4 mt-12 border-t border-slate-200 md:flex-row md:justify-between">
-                <p className="block mb-4 text-ls text-center text-slate-500 md:mb-0">
+                <p className="block mb-4 text-ls text-center text-white md:mb-0">
                     Copyright © 2025 - 
-                    <a href="https://github.com/Richard15151" target="_blank">Feito por <span className="text-blue-500">Richard Oliveira</span></a>
+                    <a href="https://github.com/Richard15151" target="_blank">Feito por <span className="text-blue-500">Richard Oliveira </span></a>
                      + 
-                     <a href="https://ai.google.dev/gemini-api/docs?hl=pt-br" target="_blank"><span className="text-blue-500">Gemini API</span></a>
+                     <a href="https://ai.google.dev/gemini-api/docs?hl=pt-br" target="_blank"><span className="text-blue-500"> Gemini API </span></a>
+                     +
+                     <a href="https://developers.google.com/workspace/forms/api/reference/rest?hl=pt-br" target="_blank"><span className="text-blue-500"> Forms API </span></a>
                 </p>
                 <div className="flex gap-4 text-slate-600 sm:justify-center">
                     <a href="https://github.com/Richard15151/frontendestudai.git">

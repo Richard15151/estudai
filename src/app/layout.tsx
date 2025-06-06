@@ -27,6 +27,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Container da imagem de fundo com blur */}
+        <div className="background-image-container">
+          <img
+            src="./images/fundo.jpg"
+            alt="Background"
+            className="background-image"
+          />
+        </div>
+        {/* Sobreposição para o efeito de blur e legibilidade */}
+        <div className="background-overlay"></div>
+
+        {/* Este é o conteúdo real da sua aplicação (páginas, componentes) */}
         {children}
       </body>
     </html>
