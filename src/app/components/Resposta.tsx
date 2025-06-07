@@ -117,20 +117,26 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
 
 
    // --- NOVO useEffect: Dispara a geração do Forms quando googleAccessToken está disponível ---
-  useEffect(() => {
+  useEffect(() => { 
+    const hasAccessToken = !!googleAccessToken; // Converte para booleano
+    const hasExercicios = listaExercicios.length > 0;
+    
+    console.log('NOVO useEffect - Verificando condições:', {
+      hasAccessToken,
+      listaExerciciosLength: listaExercicios.length,
+      isGeneratingForm,
+      formGeneratedSuccess
+    });
     // Apenas tente gerar o forms se tiver um token e a lista de exercícios não estiver vazia,
     // e se não estiver *já* gerando o forms e se ainda não tiver sido gerado com sucesso.
-    if (googleAccessToken && listaExercicios.length > 0 && !isGeneratingForm && !formGeneratedSuccess) {
-      console.log("Access Token disponível. Tentando gerar Google Forms...");
-      // Chame a função handleGerarGoogleForm diretamente aqui
-      // A função já tem a lógica de verificar se o token existe antes de chamar a API POST.
-      // Defina um pequeno timeout para garantir que o React atualize o estado antes de chamar a função.
+    if (hasAccessToken && hasExercicios && !isGeneratingForm && !formGeneratedSuccess) {
+      console.log("Access Token disponível E lista de exercícios pronta. Disparando handleGerarGoogleForm automaticamente...");
       const timer = setTimeout(() => {
          handleGerarGoogleForm();
-      }, 100); // Pequeno delay
-      return () => clearTimeout(timer); // Limpa o timer se o componente desmontar
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [googleAccessToken, listaExercicios, isGeneratingForm, formGeneratedSuccess]); // Depende do token, lista, e estados de controle
+  }, [googleAccessToken, listaExercicios, isGeneratingForm, formGeneratedSuccess]);
 
 
   // --- FUNÇÃO PARA ATUALIZAR UM EXERCÍCIO NA LISTA ---
@@ -211,7 +217,7 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
           titulo: tituloLocal,
           materia: materiaLocal,
           tema: temaLocal,
-          accessToken: googleAccessToken, // Envia o token de acesso
+          accessToken: googleAccessToken
         }),
       });
 
