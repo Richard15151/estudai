@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Server configuration error: Missing Google API credentials.' }, { status: 500 });
   }
 
-  const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+  // const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
@@ -33,17 +33,58 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { tokens } = await oauth2Client.getToken(code);
+        // --- Troca de token manual (alternativa se oauth2Client.getToken() causar problemas) ---
+    const tokenUrl = 'https://oauth2.googleapis.com/token';
+    const params = new URLSearchParams();
+    params.append('code', code);
+    params.append('client_id', CLIENT_ID);
+    params.append('client_secret', CLIENT_SECRET);
+    params.append('redirect_uri', REDIRECT_URI);
+    params.append('grant_type', 'authorization_code');
+
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json();
+      console.error('Error getting tokens from Google (manual fetch):', errorData);
+      return NextResponse.json({ error: 'Failed to authenticate with Google.', details: errorData }, { status: tokenResponse.status });
+    }
+
+    const tokens = await tokenResponse.json();
+    // --------------------------------------------------------------------------------------
+
+    // Você ainda pode instanciar o OAuth2Client para usar o token de acesso nas APIs do Google
+    // mas não para a troca inicial do código
+    const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
     oauth2Client.setCredentials(tokens);
+
+    // O refresh_token só vem na primeira vez. Armazene-o!
+    if (tokens.refresh_token) {
+        // ATENÇÃO: Em produção, armazene isso de forma segura (banco de dados, etc.)
+        // Para testes, você pode usar um arquivo temporário no backend
+        // Ou, se você quer que o frontend o receba, considere cuidadosamente a segurança.
+        console.log("Refresh Token recebido e precisa ser armazenado:", tokens.refresh_token);
+        // Exemplo de como você poderia persistir o refresh token no backend (fora desta rota GET)
+        // Por exemplo, em um banco de dados associado a um usuário.
+        // Ou, para fins de depuração:
+        // import fs from 'fs/promises';
+        // await fs.writeFile('/tmp/refresh_token.txt', tokens.refresh_token);
+    }
+
 
     const redirectBackUrl = new URL(url.origin);
     redirectBackUrl.searchParams.set('accessToken', tokens.access_token || '');
 
-    // Redireciona o navegador do usuário de volta para a sua aplicação principal
     return NextResponse.redirect(redirectBackUrl);
-
-  } catch (error) {
-    console.error('Error getting tokens from Google:', error);
-    return NextResponse.json({ error: 'Failed to authenticate with Google.' }, { status: 500 });
+    
+  } catch (error: any) {
+  console.error('Error getting tokens from Google:', error.response?.data || error.message || error);
+  return NextResponse.json({ error: 'Failed to authenticate with Google.' }, { status: 500 });
   }
 }
