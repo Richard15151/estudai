@@ -45,15 +45,13 @@ interface RespostaProps {
 // --- COMPONENTE FUNCIONAL ---
 export default function Resposta({ resposta, isLoading, onGerarOutra }: RespostaProps) {
   // --- HOOKS DE ESTADO: DEVEM FICAR DENTRO DO COMPONENTE ---
-  const [isGeneratingForm, setIsGeneratingForm] = useState<boolean>(false); // Novo estado para controlar a geração do forms
-  const [formGeneratedSuccess, setFormGeneratedSuccess] = useState<boolean>(false); // Novo estado para sucesso na geração
   const [listaExercicios, setListaExercicios] = useState<Exercicio[]>([]);
   const [gabaritoLocal, setGabaritoLocal] = useState<Gabarito>({});
   const [tituloLocal, setTituloLocal] = useState<string>('');
   const [materiaLocal, setMateriaLocal] = useState<string>('');
   const [temaLocal, setTemaLocal] = useState<string>('');
   const [quantidadeLocal, setQuantidadeLocal] = useState<number | string>(0);
-  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); // ESTE ESTADO DEVE FICAR AQUI DENTRO!
+
 
   // --- PRIMEIRO useEffect: Para processar a resposta da API principal (gerar lista) ---
   useEffect(() => {
@@ -102,43 +100,6 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
     }
   }, [resposta, isLoading]);
 
-  // --- SEGUNDO useEffect: Dedicado a capturar o accessToken da URL ---
-  // Este useEffect roda apenas uma vez na montagem do componente para verificar a URL.
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('accessToken');
-    if (token) {
-      setGoogleAccessToken(token);
-      // Limpar o token da URL
-      urlParams.delete('accessToken');
-      window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`);
-    }
-  }, []); // Array de dependências vazio para rodar apenas uma vez na montagem
-
-
-   // --- NOVO useEffect: Dispara a geração do Forms quando googleAccessToken está disponível ---
-  useEffect(() => { 
-    const hasAccessToken = !!googleAccessToken; // Converte para booleano
-    const hasExercicios = listaExercicios.length > 0;
-    
-    console.log('NOVO useEffect - Verificando condições:', {
-      hasAccessToken,
-      listaExerciciosLength: listaExercicios.length,
-      isGeneratingForm,
-      formGeneratedSuccess
-    });
-    // Apenas tente gerar o forms se tiver um token e a lista de exercícios não estiver vazia,
-    // e se não estiver *já* gerando o forms e se ainda não tiver sido gerado com sucesso.
-    if (hasAccessToken && hasExercicios && !isGeneratingForm && !formGeneratedSuccess) {
-      console.log("Access Token disponível E lista de exercícios pronta. Disparando handleGerarGoogleForm automaticamente...");
-      const timer = setTimeout(() => {
-         handleGerarGoogleForm();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [googleAccessToken, listaExercicios, isGeneratingForm, formGeneratedSuccess]);
-
-
   // --- FUNÇÃO PARA ATUALIZAR UM EXERCÍCIO NA LISTA ---
   const handleUpdateExercicio = (id: string, novoExercicio: Exercicio) => {
     setListaExercicios(prevExercicios =>
@@ -178,79 +139,6 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
       return novosExercicios;
     });
   };
-
-  // --- FUNÇÃO PARA GERAR O GOOGLE FORMS (AJUSTADA PARA USAR NOVOS ESTADOS) ---
-  const handleGerarGoogleForm = async () => {
-    // 1. Verificar se já temos um token de acesso. Se não, iniciar o fluxo OAuth.
-    if (!googleAccessToken) {
-      try {
-        setIsGeneratingForm(true); // Indica que o processo de autenticação foi iniciado
-        const authResponse = await fetch('/api/gerar-google-form'); // Chama a API Route GET
-        const data = await authResponse.json();
-        if (data.authUrl) {
-          // Redireciona o usuário para a URL de autenticação do Google
-          window.location.href = data.authUrl;
-          return; // Para a execução aqui
-        } else {
-          throw new Error("Não foi possível obter a URL de autenticação.");
-        }
-      } catch (error) { 
-        console.error("Erro ao iniciar autenticação Google:", error);
-        alert("Erro ao iniciar autenticação com o Google. Verifique o console.");
-      } finally {
-        setIsGeneratingForm(false); // Reseta o estado em caso de erro na autenticação inicial
-      }
-      return;
-    }
-
-    // 2. Se já temos um token (ou após o redirecionamento e captura do token),
-    // fazer a requisição POST para criar o formulário.
-    try {
-      setIsGeneratingForm(true); // Indica que a geração do formulário foi iniciada
-      const response = await fetch('/api/gerar-google-form', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exercicios: listaExercicios,
-          titulo: tituloLocal,
-          materia: materiaLocal,
-          tema: temaLocal,
-          accessToken: googleAccessToken
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Erro HTTP! Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      alert(`Formulário Google Forms criado com sucesso! URL de Edição: ${result.formUrl}\nURL para Alunos: ${result.viewUrl}`);
-      window.open(result.viewUrl, '_blank'); // Abre o formulário em uma nova aba
-      setFormGeneratedSuccess(true); // Marca que o formulário foi gerado com sucesso
-
-    } catch (error: any) {
-      console.error("Erro ao gerar formulário do Google Forms:", error.message);
-      alert(`Erro ao gerar formulário: ${error.message}. Verifique as permissões ou se o token é válido.`);
-    } finally {
-      setIsGeneratingForm(false); // Sempre reseta o estado de carregamento
-    }
-  };
-
-
-  // --- RENDERIZAÇÃO DE ESTADO DE CARREGAMENTO ---
-  if (isLoading || isGeneratingForm) {
-    return (
-      <div className="response bg-white p-6 rounded-xl shadow-md border border-gray-200 mt-6 text-center max-w-xl mx-auto">
-        <p className="text-xl text-sky-600 font-semibold animate-pulse">
-          {isGeneratingForm ? "Criando seu Google Forms..." : "Gerando sua lista de exercícios..."}
-        </p>
-        <p className="text-gray-500 text-sm mt-2">Isso pode levar alguns segundos.</p>
-      </div>
-    );
-  }
 
   // --- SE A RESPOSTA FOR NULA OU UMA STRING (ERRO/VALIDAÇÃO) ---
   if (!resposta || typeof resposta === 'string') {
@@ -342,20 +230,6 @@ export default function Resposta({ resposta, isLoading, onGerarOutra }: Resposta
           className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300 text-md shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
         >
           Gerar Outra Lista
-        </button>
-
-        {/* Botão Gerar Google Forms */}
-        <button
-          onClick={handleGerarGoogleForm}
-          // Desabilita o botão enquanto estiver gerando
-          disabled={isGeneratingForm || formGeneratedSuccess} // Desabilita se já gerou ou está gerando
-          className={`font-bold py-3 px-8 rounded-lg transition duration-300 text-md shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2
-            ${isGeneratingForm || formGeneratedSuccess
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-green-600 hover:bg-green-700 focus:ring-green-600 text-white'
-            }`}
-        >
-          {isGeneratingForm ? "Gerando Forms..." : "Gerar Google Forms"}
         </button>
       </div>
     </div>
