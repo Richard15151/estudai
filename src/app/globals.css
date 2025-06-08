@@ -21,20 +21,12 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  /* background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb)); */
-  /* Remove o fundo gradiente padrão do Next.js */
-
   margin: 0;
   padding: 0;
-  font-family: sans-serif; /* Apenas um exemplo, ajuste sua fonte */
-  position: relative; /* Necessário para posicionar o background-overlay */
-  min-height: 100vh; /* Garante que o body ocupa a altura total da viewport */
-  overflow-x: hidden; /* Evita scroll horizontal indesejado */
+  font-family: sans-serif;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 /* Estilos para o fundo com imagem e blur */
 .background-image-container {

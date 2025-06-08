@@ -7,8 +7,6 @@ export default function Footer(){
                     <a href="https://github.com/Richard15151" target="_blank">Feito por <span className="text-blue-500">Richard Oliveira </span></a>
                      + 
                      <a href="https://ai.google.dev/gemini-api/docs?hl=pt-br" target="_blank"><span className="text-blue-500"> Gemini API </span></a>
-                     +
-                     <a href="https://developers.google.com/workspace/forms/api/reference/rest?hl=pt-br" target="_blank"><span className="text-blue-500"> Forms API </span></a>
                 </p>
                 <div className="flex gap-4 text-slate-600 sm:justify-center">
                     <a href="https://github.com/Richard15151/frontendestudai.git">

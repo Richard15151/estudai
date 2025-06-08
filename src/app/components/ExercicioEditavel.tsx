@@ -8,6 +8,7 @@ interface ExercicioEditavelProps {
   index: number;
   onUpdateExercicio: (id: string, novoExercicio: Exercicio) => void;
   onRemoverExercicio: (id: string) => void;
+  isGeneratingPdf: boolean
 }
 
 export default function ExercicioEditavel({
@@ -15,6 +16,7 @@ export default function ExercicioEditavel({
   index,
   onUpdateExercicio,
   onRemoverExercicio,
+  isGeneratingPdf
 }: ExercicioEditavelProps) {
   const [estaEditando, setEstaEditando] = useState(false);
   const [exercicioEditavel, setExercicioEditavel] = useState<Exercicio>(exercicio);
@@ -100,39 +102,40 @@ export default function ExercicioEditavel({
     <li className="mb-3 p-3 border-l-4 border-blue-500 bg-blue-50 rounded shadow-sm">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-medium text-lg">Questão {index + 1}</h3>
-        <div className="flex space-x-2">
-          {!estaEditando ? (
-            <button
-              onClick={() => setEstaEditando(true)}
-              className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
-            >
-              Editar
-            </button>
-          ) : (
-            <>
+        {!isGeneratingPdf && (
+          <div className="flex space-x-2">
+              {!estaEditando ? (
+                <button
+                  onClick={() => setEstaEditando(true)}
+                  className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+                >
+                  Editar
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSalvar}
+                    className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={handleCancelar}
+                    className="px-3 py-1 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              )}
               <button
-                onClick={handleSalvar}
-                className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm"
+                onClick={handleRemover}
+                className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors text-sm"
               >
-                Salvar
+                Remover
               </button>
-              <button
-                onClick={handleCancelar}
-                className="px-3 py-1 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-            </>
-          )}
-          <button
-            onClick={handleRemover}
-            className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors text-sm"
-          >
-            Remover
-          </button>
-        </div>
-      </div>
-
+            </div>
+            )}
+          </div>
       {!estaEditando ? (
         <>
           <p className="mb-2 text-gray-900">{exercicio.enunciado}</p>
@@ -147,9 +150,11 @@ export default function ExercicioEditavel({
               ))}
             </ul>
           )}
-          <p className="mt-2 text-sm text-blue-700">
-            Resposta Correta: <span className="font-bold">{exercicio.respostaCorreta?.toUpperCase()}</span>
-          </p>
+          {!isGeneratingPdf && (
+            <p className="mt-2 text-sm text-blue-700">
+              Resposta Correta: <span className="font-bold">{exercicio.respostaCorreta?.toUpperCase()}</span>
+            </p>
+          )}
         </>
       ) : (
         <div className="space-y-3">
