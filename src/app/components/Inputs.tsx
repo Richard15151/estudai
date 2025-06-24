@@ -27,20 +27,20 @@ export default function Inputs({ setResposta, setIsLoading }: InputsProps) {
 
   const enviarFormulario = async () => {
     if (!materia || !tema || !quantidade || !dificuldade) {
-      setResposta("Por favor, preencha todos os campos."); // << Passa string
+      setResposta("Por favor, preencha todos os campos.");
       return;
     }
 
     if (materia.length < 3 || tema.length < 3) {
       setResposta(
         "Por favor, informe pelo menos 3 caracteres para matéria e tema."
-      ); // << Passa string
+      );
       return;
     }
 
     const numQuantidade = parseInt(quantidade);
     if (isNaN(numQuantidade) || numQuantidade <= 0 || numQuantidade > 20) {
-      setResposta("Por favor, informe uma quantidade válida (1 a 20)."); // << Passa string
+      setResposta("Por favor, informe uma quantidade válida (1 a 20).");
       return;
     }
 
@@ -68,22 +68,22 @@ export default function Inputs({ setResposta, setIsLoading }: InputsProps) {
                  mensagemAlerta = resultado.exercicios[0].enunciado;
             }
             // Passa um objeto especial ou uma string formatada para o alerta
-            setResposta({ titulo: "ALERTA", mensagemAlerta } as DadosLista); // Ou uma string formatada
+            setResposta({ titulo: "ALERTA", mensagemAlerta } as DadosLista);
         } else {
-            setResposta(resultado as DadosLista); // << Passa o objeto parseado
+            setResposta(resultado as DadosLista);
         }
         limparFormulario();
       } else {
-        setResposta(resultado.error || "Erro ao processar a requisição."); // << Passa string
+        setResposta(resultado.error || "Erro ao processar a requisição.");
       }
     } catch (err) {
       if (err instanceof Error) {
-        setResposta("Erro na conexão com servidor: " + err.message); // << Passa string
+        setResposta("Erro na conexão com servidor: " + err.message);
       } else {
         setResposta("Ocorreu um erro desconhecido na conexão.");
       }
     } finally {
-      setIsLoading(false); // << Atualiza estado de loading no pai
+      setIsLoading(false);
     }
   };
 
